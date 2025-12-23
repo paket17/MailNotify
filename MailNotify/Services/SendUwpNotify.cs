@@ -8,9 +8,7 @@ public class SendUwpNotify : ISendNotifications<ICalendarNotification>
     public void SendNotification(ICalendarNotification notification)
     {
         var toast = CreateToast(notification);
-#if WINDOWS_UWP
         toast.Show();
-#endif
     }
 
     private ToastContentBuilder CreateToast(ICalendarNotification notification)
