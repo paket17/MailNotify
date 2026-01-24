@@ -1,18 +1,14 @@
-﻿using MailNotify.Interfases;
+﻿using MailNotify.Interfaces;
 
 namespace MailNotify;
 
 public class NotifyWorker(IGetNotifications<ICalendarNotification> notifyGetter, 
-    ISendNotifications<ICalendarNotification> notifySender,
-    INotifyCache notifyCache)
+    ISendNotifications<ICalendarNotification> notifySender)
 {
     public async Task Run()
     {
-        var notifications = notifyGetter.GetNotifications()
-            .Where(x => !notifyCache.IsSent(x));
+        var notifications = notifyGetter.GetNotifications();
         foreach (var notification in notifications)
             notifySender.SendNotification(notification);
-
-        await Task.Delay(TimeSpan.FromMinutes(5));
     }
 }

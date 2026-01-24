@@ -1,6 +1,8 @@
+using MailNotify.Interfaces;
+
 namespace MailNotify;
 
-public class Worker(ILogger<Worker> logger, NotifyWorker notifyWorker) : BackgroundService
+public class Worker(ILogger<Worker> logger, ISettingsProvider settingsProvider, IServiceScopeFactory scopeFactory) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -9,8 +11,10 @@ public class Worker(ILogger<Worker> logger, NotifyWorker notifyWorker) : Backgro
         {
             while (!stoppingToken.IsCancellationRequested)
             {
+                using var scope = scopeFactory.CreateScope();
+                var notifyWorker = scope.ServiceProvider.GetRequiredService<NotifyWorker>();
                 await notifyWorker.Run();
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(settingsProvider.UpdateOffsetMinutes), stoppingToken);
             }
         }
         catch (Exception ex)

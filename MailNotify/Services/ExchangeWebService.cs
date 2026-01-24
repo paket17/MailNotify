@@ -1,4 +1,5 @@
-﻿using Microsoft.Exchange.WebServices.Data;
+﻿using MailNotify.Interfaces;
+using Microsoft.Exchange.WebServices.Data;
 using System.Net;
 
 namespace MailNotify.Services;
@@ -11,7 +12,7 @@ public class ExchangeWebService
         return exchangeService;
     }
 
-    public ExchangeWebService(SettingsProvider settingsProvider)
+    public ExchangeWebService(ISettingsProvider settingsProvider)
     {
         exchangeService = new ExchangeService
         {

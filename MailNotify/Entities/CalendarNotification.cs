@@ -1,8 +1,8 @@
-﻿using MailNotify.Interfases;
+﻿using MailNotify.Interfaces;
 
 namespace MailNotify.Entities;
 
-public class CalendarNotification : Notification, ICalendarNotification
+public record CalendarNotification : Notification, ICalendarNotification
 {
     public DateTime Start { get; set; }
     public TimeSpan Duration { get; set; }

@@ -1,36 +1,31 @@
-﻿using MailNotify.Interfases;
+﻿using MailNotify.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MailNotify.Services;
 
 public class NotifyCache : INotifyCache
 {
-    private readonly Dictionary<string, DateTime> notifyCache;
-    private DateTime lastDate;
+    private readonly MemoryCache cache;
+    private readonly TimeSpan ttl;
 
-    public bool IsSent(INotification notification)
+    public bool Add(INotification notify)
     {
-        ClearCache();
-        var isContains = notifyCache.TryGetValue(notification.Id, out var lastUpdate) 
-            && lastUpdate == notification.LastUpdate;
-        if (!isContains)
-        {
-            if (!notifyCache.TryAdd(notification.Id, notification.LastUpdate))
-                notifyCache[notification.Id] = notification.LastUpdate;
-        }
+        if (cache.TryGetValue(notify, out _))
+            return false;
 
-        return isContains;
+        cache.Set(notify, true, ttl);
+        return true;
     }
 
-    private void ClearCache()
-    {
-        if (lastDate.Date != DateTime.Today.Date)
-            notifyCache.Clear();
+    public bool Contains(INotification notify) => 
+        cache.TryGetValue(notify, out _);
 
-        lastDate = DateTime.Today;
-    }
+    public void Remove(INotification notify) => 
+        cache.Remove(notify);
 
-    public NotifyCache()
+    public NotifyCache(ISettingsProvider settingsProvider)
     {
-        notifyCache = [];
+        ttl = TimeSpan.FromMinutes(settingsProvider.ReminderOffsetMinutes);
+        cache = new MemoryCache(new MemoryCacheOptions());
     }
 }

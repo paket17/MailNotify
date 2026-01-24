@@ -1,4 +1,4 @@
-﻿namespace MailNotify.Interfases;
+﻿namespace MailNotify.Interfaces;
 
 public interface IGetNotifications<out T> where T : INotification
 {

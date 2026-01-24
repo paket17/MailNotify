@@ -1,8 +1,8 @@
-﻿using MailNotify.Interfases;
+﻿using MailNotify.Interfaces;
 
 namespace MailNotify.Entities;
 
-public class Notification : INotification
+public record Notification : INotification
 {
     public string? Id { get; set; }
     public string? Subject { get; set; }

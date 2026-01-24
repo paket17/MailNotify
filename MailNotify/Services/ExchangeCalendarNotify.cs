@@ -1,5 +1,5 @@
 ﻿using MailNotify.Entities;
-using MailNotify.Interfases;
+using MailNotify.Interfaces;
 using Microsoft.Exchange.WebServices.Data;
 
 namespace MailNotify.Services;
@@ -11,6 +11,7 @@ public class ExchangeCalendarNotify : IGetNotifications<ICalendarNotification>
     private readonly DateTime end;
     private readonly CalendarView calendarView;
     private readonly ExchangeService exchangeService;
+    private readonly INotifyCache notifyCache;
 
     public IEnumerable<ICalendarNotification> GetNotifications()
     {
@@ -29,12 +30,14 @@ public class ExchangeCalendarNotify : IGetNotifications<ICalendarNotification>
                 };
             })
             .Where(i => DateTime.Now >= i.Start - reminderOffset && DateTime.Now < i.Start)
+            .Where(i => !notifyCache.Contains(i))
             .ToArray();
     }
 
-    public ExchangeCalendarNotify(ExchangeWebService exchangeService, SettingsProvider settingsProvider)
+    public ExchangeCalendarNotify(ExchangeWebService exchangeService, ISettingsProvider settingsProvider, INotifyCache notifyCache)
     {
         this.exchangeService = exchangeService.GetExchangeService();
+        this.notifyCache = notifyCache;
         reminderOffset = TimeSpan.FromMinutes(settingsProvider.ReminderOffsetMinutes);
         start = DateTime.Today;
         end = DateTime.Today.AddDays(1).AddSeconds(-1);
