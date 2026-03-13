@@ -7,20 +7,28 @@ public class Worker(ILogger<Worker> logger, ISettingsProvider settingsProvider, 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Run");
-        try
+        while (!stoppingToken.IsCancellationRequested)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
                 using var scope = scopeFactory.CreateScope();
                 var notifyWorker = scope.ServiceProvider.GetRequiredService<NotifyWorker>();
-                await notifyWorker.Run();
+                await notifyWorker.Run(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {}
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error in NotifyWorker");
+            }
+
+            try
+            {
                 await Task.Delay(TimeSpan.FromMinutes(settingsProvider.UpdateOffsetMinutes), stoppingToken);
             }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error {ex}");
-            throw;
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
     }
 }
