@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using System.Text;
+using System.Text.Json;
 
 namespace MailNotify.Logging;
 
@@ -33,7 +33,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
         private readonly string _logsDirectory = logsDirectory;
         private readonly Lock _sync = new();
 
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => 
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => 
             NullScope.Instance;
 
         public bool IsEnabled(LogLevel logLevel) => 
@@ -41,28 +41,31 @@ public sealed class FileLoggerProvider : ILoggerProvider
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            if (formatter == null)
+            if (formatter == null) 
                 return;
 
             var message = formatter(state, exception);
             if (string.IsNullOrEmpty(message) && exception == null) 
                 return;
 
-            var logRecord = new StringBuilder();
-            logRecord.AppendLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
-            logRecord.AppendLine(logLevel.ToString());
-            logRecord.AppendLine(_categoryName);
-            logRecord.AppendLine(message);
-            if (exception != null)
-                logRecord.AppendLine(exception.ToString());
+            var record = new
+            {
+                Timestamp = DateTime.UtcNow.ToString("o"),
+                Level = logLevel.ToString(),
+                Category = _categoryName,
+                EventId = eventId.Id,
+                Message = message,
+                Exception = exception?.ToString()
+            };
 
             try
             {
-                var fileName = Path.Combine(_logsDirectory, $"log-{DateTime.Now:yyyy-MM-dd}.txt");
+                var json = JsonSerializer.Serialize(record);
+                var fileName = Path.Combine(_logsDirectory, $"log-{DateTime.Now:dd-MM-yyyy}.log");
                 lock (_sync)
-                    File.AppendAllText(fileName, logRecord.ToString());
+                    File.AppendAllText(fileName, json + Environment.NewLine);
             }
-            catch {}
+            catch { }
         }
     }
 
