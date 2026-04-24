@@ -27,4 +27,6 @@ public class SettingsProvider(IConfiguration configuration) : ISettingsProvider
     }
 
     public string ExchangeUrl => configuration.GetValue<string>(nameof(ExchangeUrl)) ?? string.Empty;
+
+    public bool AutoStart => configuration.GetValue<bool?>(nameof(AutoStart)) ?? true;
 }
