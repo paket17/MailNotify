@@ -3,8 +3,7 @@ using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace MailNotify.Services;
 
-public class SendUwpNotify(INotifyCache notifyCache) 
-    : ISendNotifications<ICalendarNotification>
+public class SendUwpNotify(INotifyCache notifyCache) : ISendNotifications<ICalendarNotification>
 {
     public void SendNotification(ICalendarNotification notification)
     {

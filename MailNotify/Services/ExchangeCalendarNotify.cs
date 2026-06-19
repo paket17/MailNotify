@@ -4,18 +4,12 @@ using Microsoft.Exchange.WebServices.Data;
 
 namespace MailNotify.Services;
 
-public class ExchangeCalendarNotify : IGetNotifications<ICalendarNotification>
+public class ExchangeCalendarNotify(ExchangeService exchangeService) : IGetNotifications<ICalendarNotification>
 {
-    private readonly TimeSpan reminderOffset;
-    private readonly DateTime start;
-    private readonly DateTime end;
-    private readonly CalendarView calendarView;
-    private readonly ExchangeService exchangeService;
-    private readonly INotifyCache notifyCache;
-
-    public IEnumerable<ICalendarNotification> GetNotifications()
+    public IEnumerable<ICalendarNotification> GetNotifications(DateTime start, DateTime end)
     {
-        return exchangeService.FindAppointments(WellKnownFolderName.Calendar, calendarView)
+        var calendarView = GetCalendarView(start, end);
+        return [.. exchangeService.FindAppointments(WellKnownFolderName.Calendar, calendarView)
             .Select(i =>
             {
                 return new CalendarNotification()
@@ -28,28 +22,21 @@ public class ExchangeCalendarNotify : IGetNotifications<ICalendarNotification>
                     WebUrl = i.WebClientReadFormQueryString,
                     LastUpdate = i.LastModifiedTime
                 };
-            })
-            .Where(i => DateTime.Now >= i.Start - reminderOffset && DateTime.Now < i.Start)
-            .Where(i => !notifyCache.Contains(i))
-            .ToArray();
+            })];
     }
 
-    public ExchangeCalendarNotify(ExchangeWebService exchangeService, ISettingsProvider settingsProvider, INotifyCache notifyCache)
+    private CalendarView GetCalendarView(DateTime start, DateTime end)
     {
-        this.exchangeService = exchangeService.GetExchangeService();
-        this.notifyCache = notifyCache;
-        reminderOffset = TimeSpan.FromMinutes(settingsProvider.ReminderOffsetMinutes);
-        start = DateTime.Today;
-        end = DateTime.Today.AddDays(1).AddSeconds(-1);
-        calendarView = new(start, end)
+        return new CalendarView(start, end)
         {
-            PropertySet = new(ItemSchema.Id,
-                              ItemSchema.Subject,
-                              AppointmentSchema.Start,
-                              AppointmentSchema.Duration,
-                              AppointmentSchema.Location,
-                              ItemSchema.WebClientReadFormQueryString,
-                              ItemSchema.LastModifiedTime)
+            PropertySet = new(
+                ItemSchema.Id,
+                ItemSchema.Subject,
+                AppointmentSchema.Start,
+                AppointmentSchema.Duration,
+                AppointmentSchema.Location,
+                ItemSchema.WebClientReadFormQueryString,
+                ItemSchema.LastModifiedTime)
         };
     }
 }

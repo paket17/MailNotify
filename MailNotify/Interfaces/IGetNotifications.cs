@@ -2,5 +2,5 @@
 
 public interface IGetNotifications<out T> where T : INotification
 {
-    public IEnumerable<T> GetNotifications();
+    public IEnumerable<T> GetNotifications(DateTime start, DateTime end);
 }

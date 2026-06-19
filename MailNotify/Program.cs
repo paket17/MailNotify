@@ -14,6 +14,7 @@ builder.Services.AddScoped<NotifyWorker>();
 builder.Services.AddSingleton<IAutoStartService, WindowsAutoStartService>();
 builder.Services.AddSingleton<ISettingsProvider, SettingsProvider>();
 builder.Services.AddSingleton<INotifyCache, NotifyCache>();
+builder.Services.AddScoped<IReminderFilterService<ICalendarNotification>, ReminderFilterService>();
 
 var host = builder.Build();
 host.Services.GetRequiredService<IAutoStartService>().Configure();

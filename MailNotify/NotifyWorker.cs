@@ -2,16 +2,22 @@
 
 namespace MailNotify;
 
-public class NotifyWorker(IGetNotifications<ICalendarNotification> notifyGetter, 
+public class NotifyWorker(
+    IGetNotifications<ICalendarNotification> notifyGetter, 
     ISendNotifications<ICalendarNotification> notifySender,
+    IReminderFilterService<ICalendarNotification> reminderFilterService,
     ILogger<NotifyWorker> logger)
 {
     public async Task Run(CancellationToken cancellationToken)
     {
+        var start = DateTime.Today;
+        var end = DateTime.Today.AddDays(1).AddSeconds(-1);
         IEnumerable<ICalendarNotification> notifications;
+
         try
         {
-            notifications = notifyGetter.GetNotifications();
+            notifications = notifyGetter.GetNotifications(start, end);
+            notifications = reminderFilterService.GetReminders(notifications);
         }
         catch (Exception ex)
         {
