@@ -1,4 +1,4 @@
-﻿using MailNotify.Interfaces;
+using MailNotify.Interfaces;
 using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace MailNotify.Services;
@@ -12,7 +12,7 @@ public class SendUwpNotify(INotifyCache notifyCache) : ISendNotifications<ICalen
         toast.Show();
     }
 
-    private ToastContentBuilder CreateToast(ICalendarNotification notification)
+    internal static ToastContentBuilder CreateToast(ICalendarNotification notification)
     {
         return new ToastContentBuilder()
             .AddText(notification.Subject)
