@@ -1,4 +1,4 @@
-﻿using MailNotify.Interfaces;
+using MailNotify.Interfaces;
 
 namespace MailNotify;
 
@@ -6,18 +6,23 @@ public class NotifyWorker(
     IGetNotifications<ICalendarNotification> notifyGetter, 
     ISendNotifications<ICalendarNotification> notifySender,
     IReminderFilterService<ICalendarNotification> reminderFilterService,
+    IDailyAppointmentService newTodayAppointmentService,
     ILogger<NotifyWorker> logger)
 {
     public async Task Run(CancellationToken cancellationToken)
     {
         var start = DateTime.Today;
         var end = DateTime.Today.AddDays(1).AddSeconds(-1);
-        IEnumerable<ICalendarNotification> notifications;
+        var notifications = new List<ICalendarNotification>();
 
         try
         {
-            notifications = notifyGetter.GetNotifications(start, end);
-            notifications = reminderFilterService.GetReminders(notifications);
+            var todayNotifications = notifyGetter.GetNotifications(start, end).ToList();
+            var newAppointmentsNotification = newTodayAppointmentService.GetDailyAppointments(todayNotifications);
+            if (newAppointmentsNotification != null)
+                notifications.Add(newAppointmentsNotification);
+
+            notifications.AddRange(reminderFilterService.GetReminders(todayNotifications));
         }
         catch (Exception ex)
         {

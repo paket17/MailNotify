@@ -6,4 +6,5 @@ public interface ISettingsProvider
     public double UpdateOffsetMinutes { get; }
     public string ExchangeUrl { get; }
     public bool AutoStart { get; }
+    public bool NotifyDailyAppointments { get; }
 }

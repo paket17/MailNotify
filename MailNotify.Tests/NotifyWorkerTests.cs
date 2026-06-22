@@ -17,16 +17,21 @@ public class NotifyWorkerTests
         var getter = Substitute.For<IGetNotifications<ICalendarNotification>>();
         var sender = Substitute.For<ISendNotifications<ICalendarNotification>>();
         var filter = Substitute.For<IReminderFilterService<ICalendarNotification>>();
+        var newTodayAppointmentService = Substitute.For<IDailyAppointmentService>();
         var start = DateTime.Today;
         var end = start.AddDays(1).AddSeconds(-1);
         getter.GetNotifications(start, end).Returns(source);
-        filter.GetReminders(source).Returns([source[1]]);
-        var worker = CreateWorker(getter, sender, filter);
+        filter.GetReminders(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)))
+            .Returns([source[1]]);
+        var worker = CreateWorker(getter, sender, filter, newTodayAppointmentService);
 
         await worker.Run(CancellationToken.None);
 
         getter.Received(1).GetNotifications(start, end);
-        filter.Received(1).GetReminders(source);
+        newTodayAppointmentService.Received(1)
+            .GetDailyAppointments(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)));
+        filter.Received(1)
+            .GetReminders(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)));
         sender.Received(1).SendNotification(source[1]);
         sender.DidNotReceive().SendNotification(source[0]);
     }
@@ -37,12 +42,14 @@ public class NotifyWorkerTests
         var getter = Substitute.For<IGetNotifications<ICalendarNotification>>();
         var sender = Substitute.For<ISendNotifications<ICalendarNotification>>();
         var filter = Substitute.For<IReminderFilterService<ICalendarNotification>>();
+        var newTodayAppointmentService = Substitute.For<IDailyAppointmentService>();
         getter.GetNotifications(Arg.Any<DateTime>(), Arg.Any<DateTime>())
             .Returns(_ => throw new InvalidOperationException("Exchange failed"));
-        var worker = CreateWorker(getter, sender, filter);
+        var worker = CreateWorker(getter, sender, filter, newTodayAppointmentService);
 
         await worker.Run(CancellationToken.None);
 
+        newTodayAppointmentService.DidNotReceiveWithAnyArgs().GetDailyAppointments(default!);
         filter.DidNotReceiveWithAnyArgs().GetReminders(default!);
         sender.DidNotReceiveWithAnyArgs().SendNotification(default!);
     }
@@ -55,10 +62,11 @@ public class NotifyWorkerTests
         var getter = Substitute.For<IGetNotifications<ICalendarNotification>>();
         var sender = Substitute.For<ISendNotifications<ICalendarNotification>>();
         var filter = Substitute.For<IReminderFilterService<ICalendarNotification>>();
+        var newTodayAppointmentService = Substitute.For<IDailyAppointmentService>();
         getter.GetNotifications(Arg.Any<DateTime>(), Arg.Any<DateTime>()).Returns([first, second]);
         filter.GetReminders(Arg.Any<IEnumerable<ICalendarNotification>>()).Returns([first, second]);
         sender.When(i => i.SendNotification(first)).Do(_ => throw new InvalidOperationException("Toast failed"));
-        var worker = CreateWorker(getter, sender, filter);
+        var worker = CreateWorker(getter, sender, filter, newTodayAppointmentService);
 
         await worker.Run(CancellationToken.None);
 
@@ -74,21 +82,55 @@ public class NotifyWorkerTests
         var getter = Substitute.For<IGetNotifications<ICalendarNotification>>();
         var sender = Substitute.For<ISendNotifications<ICalendarNotification>>();
         var filter = Substitute.For<IReminderFilterService<ICalendarNotification>>();
+        var newTodayAppointmentService = Substitute.For<IDailyAppointmentService>();
         getter.GetNotifications(Arg.Any<DateTime>(), Arg.Any<DateTime>()).Returns([CreateNotification("cancelled")]);
         filter.GetReminders(Arg.Any<IEnumerable<ICalendarNotification>>())
             .Returns(call => call.Arg<IEnumerable<ICalendarNotification>>());
-        var worker = CreateWorker(getter, sender, filter);
+        var worker = CreateWorker(getter, sender, filter, newTodayAppointmentService);
 
         await worker.Run(cts.Token);
 
         sender.DidNotReceiveWithAnyArgs().SendNotification(default!);
     }
 
+    [Fact]
+    public async Task Run_SendsDailyAppointmentsNotificationBeforeReminders()
+    {
+        var source = new[]
+        {
+            CreateNotification("future"),
+            CreateNotification("reminder")
+        };
+        var newAppointments = CreateNotification("new-today-appointments");
+        var getter = Substitute.For<IGetNotifications<ICalendarNotification>>();
+        var sender = Substitute.For<ISendNotifications<ICalendarNotification>>();
+        var filter = Substitute.For<IReminderFilterService<ICalendarNotification>>();
+        var newTodayAppointmentService = Substitute.For<IDailyAppointmentService>();
+        getter.GetNotifications(Arg.Any<DateTime>(), Arg.Any<DateTime>()).Returns(source);
+        newTodayAppointmentService.GetDailyAppointments(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)))
+            .Returns(newAppointments);
+        filter.GetReminders(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)))
+            .Returns([source[1]]);
+        var worker = CreateWorker(getter, sender, filter, newTodayAppointmentService);
+
+        await worker.Run(CancellationToken.None);
+
+        Received.InOrder(() =>
+        {
+            sender.SendNotification(newAppointments);
+            sender.SendNotification(source[1]);
+        });
+        filter.Received(1)
+            .GetReminders(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)));
+        sender.DidNotReceive().SendNotification(source[0]);
+    }
+
     private static NotifyWorker CreateWorker(
         IGetNotifications<ICalendarNotification> getter,
         ISendNotifications<ICalendarNotification> sender,
-        IReminderFilterService<ICalendarNotification> filter) =>
-        new(getter, sender, filter, Substitute.For<ILogger<NotifyWorker>>());
+        IReminderFilterService<ICalendarNotification> filter,
+        IDailyAppointmentService newTodayAppointmentService) =>
+        new(getter, sender, filter, newTodayAppointmentService, Substitute.For<ILogger<NotifyWorker>>());
 
     private static ICalendarNotification CreateNotification(string id) =>
         new CalendarNotification { Id = id, Subject = id, Start = DateTime.Today.AddHours(10) };

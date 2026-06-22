@@ -9,7 +9,7 @@ public class ReminderFilterServiceTests
     [Fact]
     public void GetReminders_ReturnsOnlyUpcomingUncachedNotificationsWithinReminderWindow()
     {
-        var cache = Substitute.For<INotifyCache>();
+        var cache = Substitute.For<INotificationCache>();
         var settingsProvider = Substitute.For<ISettingsProvider>();
         settingsProvider.ReminderOffsetMinutes.Returns(10);
         var service = new ReminderFilterService(cache, settingsProvider);
@@ -18,13 +18,14 @@ public class ReminderFilterServiceTests
         var future = CreateNotification("future", now.AddMinutes(30));
         var started = CreateNotification("started", now.AddMinutes(-1));
         var cached = CreateNotification("cached", now.AddMinutes(2));
-        cache.Contains(Arg.Is<ICalendarNotification>(i => i.Id == "cached")).Returns(true);
+        cache.Contains(Arg.Is<ICalendarNotification>(i => i.Id == "cached"), NotificationCacheKind.Configured)
+            .Returns(true);
 
         var reminders = service.GetReminders([due, future, started, cached]).ToArray();
 
         reminders.Select(i => i.Id!).Should().Equal("due");
-        cache.Received(1).Contains(due);
-        cache.Received(1).Contains(cached);
+        cache.Received(1).Contains(due, NotificationCacheKind.Configured);
+        cache.Received(1).Contains(cached, NotificationCacheKind.Configured);
     }
 
     private static ICalendarNotification CreateNotification(string id, DateTime start) =>

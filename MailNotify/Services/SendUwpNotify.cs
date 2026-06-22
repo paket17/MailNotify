@@ -3,23 +3,37 @@ using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace MailNotify.Services;
 
-public class SendUwpNotify(INotifyCache notifyCache) : ISendNotifications<ICalendarNotification>
+public class SendUwpNotify(INotificationCache notifyCache) : ISendNotifications<ICalendarNotification>
 {
     public void SendNotification(ICalendarNotification notification)
     {
-        notifyCache.Add(notification);
+        notifyCache.Add(notification, NotificationCacheKind.Configured);
         var toast = CreateToast(notification);
         toast.Show();
     }
 
     internal static ToastContentBuilder CreateToast(ICalendarNotification notification)
     {
-        return new ToastContentBuilder()
-            .AddText(notification.Subject)
-            .AddText(notification.Location)
-            .AddText($"{notification.Start:HH:mm} - {(notification.Start + notification.Duration):HH:mm}")
+        var toast = new ToastContentBuilder()
+            .AddText(notification.Subject);
+
+        if (string.IsNullOrWhiteSpace(notification.Message))
+        {
+            toast
+                .AddText(notification.Location)
+                .AddText($"{notification.Start:HH:mm} - {(notification.Start + notification.Duration):HH:mm}");
+        }
+        else
+        {
+            toast.AddText(notification.Message);
+        }
+
+        toast
             .SetToastScenario(ToastScenario.IncomingCall)
-            .AddAudio(null, silent: true)
-            .SetProtocolActivation(new(notification.WebUrl ?? string.Empty));
+            .AddAudio(null, silent: true);
+
+        return Uri.TryCreate(notification.WebUrl, UriKind.Absolute, out var activationUri)
+            ? toast.SetProtocolActivation(activationUri)
+            : toast;
     }
 }

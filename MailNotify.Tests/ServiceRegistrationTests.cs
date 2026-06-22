@@ -19,7 +19,8 @@ public class ServiceRegistrationTests
                 ["ExchangeUrl"] = "https://exchange.test/EWS/Exchange.asmx",
                 ["ReminderOffsetMinutes"] = "15",
                 ["UpdateOffsetMinutes"] = "3",
-                ["AutoStart"] = "false"
+                ["AutoStart"] = "false",
+                ["NotifyDailyAppointments"] = "true"
             })
             .Build());
         services.AddMailNotifyServices();
@@ -34,6 +35,10 @@ public class ServiceRegistrationTests
         scope.ServiceProvider.GetRequiredService<NotifyWorker>().Should().NotBeNull();
         scope.ServiceProvider.GetRequiredService<IGetNotifications<ICalendarNotification>>()
             .Should().BeOfType<ExchangeCalendarNotify>();
+        scope.ServiceProvider.GetRequiredService<IDailyAppointmentService>()
+            .Should().BeOfType<DailyAppointmentService>();
+        scope.ServiceProvider.GetRequiredService<INotificationCache>()
+            .Should().BeOfType<NotificationCache>();
         scope.ServiceProvider.GetRequiredService<ExchangeService>().Url
             .Should().Be(new Uri("https://exchange.test/EWS/Exchange.asmx"));
     }

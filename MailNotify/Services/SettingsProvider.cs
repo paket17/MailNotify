@@ -1,4 +1,4 @@
-﻿using MailNotify.Interfaces;
+using MailNotify.Interfaces;
 
 namespace MailNotify.Services;
 
@@ -29,4 +29,6 @@ public class SettingsProvider(IConfiguration configuration) : ISettingsProvider
     public string ExchangeUrl => configuration.GetValue<string>(nameof(ExchangeUrl)) ?? string.Empty;
 
     public bool AutoStart => configuration.GetValue<bool?>(nameof(AutoStart)) ?? true;
+
+    public bool NotifyDailyAppointments => configuration.GetValue<bool?>(nameof(NotifyDailyAppointments)) ?? true;
 }
