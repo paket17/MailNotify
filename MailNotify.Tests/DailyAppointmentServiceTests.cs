@@ -63,7 +63,7 @@ public class DailyAppointmentServiceTests
     }
 
     [Fact]
-    public void GetDailyAppointments_LimitsMessageToFiveAppointments_AndShowsRemainderCount()
+    public void GetDailyAppointments_LimitsMessageToThreeAppointments_AndShowsRemainderCount()
     {
         var settingsProvider = CreateEnabledSettingsProvider();
         var notificationCache = Substitute.For<INotificationCache>();
@@ -76,10 +76,12 @@ public class DailyAppointmentServiceTests
 
         notification.Should().NotBeNull();
         notification!.Message.Should().Contain("meeting-1");
-        notification.Message.Should().Contain("meeting-5");
+        notification.Message.Should().Contain("meeting-3");
+        notification.Message.Should().NotContain("meeting-4");
+        notification.Message.Should().NotContain("meeting-5");
         notification.Message.Should().NotContain("meeting-6");
         notification.Message.Should().NotContain("meeting-7");
-        notification.Message.Should().Contain("and 2 more");
+        notification.Message.Should().Contain("and 4 more");
         appointments.ToList().ForEach(i => notificationCache.Received(1).Add(i, NotificationCacheKind.Daily));
     }
 

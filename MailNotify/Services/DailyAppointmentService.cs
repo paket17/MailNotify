@@ -8,7 +8,7 @@ internal class DailyAppointmentService(
     INotificationCache notifyCache
 ) : IDailyAppointmentService
 {
-    private const int MaxAppointmentsInMessage = 5;
+    private const int MaxAppointmentsInMessage = 3;
 
     public ICalendarNotification? GetDailyAppointments(IEnumerable<ICalendarNotification> calendarNotification)
     {
