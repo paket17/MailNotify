@@ -6,7 +6,7 @@ public class NotifyWorker(
     IGetNotifications<ICalendarNotification> notifyGetter, 
     ISendNotifications<ICalendarNotification> notifySender,
     IReminderFilterService<ICalendarNotification> reminderFilterService,
-    IDailyAppointmentService newTodayAppointmentService,
+    IDailyAppointmentService dailyAppointmentService,
     ILogger<NotifyWorker> logger)
 {
     public async Task Run(CancellationToken cancellationToken)
@@ -18,9 +18,9 @@ public class NotifyWorker(
         try
         {
             var todayNotifications = notifyGetter.GetNotifications(start, end).ToList();
-            var newAppointmentsNotification = newTodayAppointmentService.GetDailyAppointments(todayNotifications);
-            if (newAppointmentsNotification != null)
-                notifications.Add(newAppointmentsNotification);
+            var dailyAppointmentsNotification = dailyAppointmentService.GetDailyAppointments(todayNotifications);
+            if (dailyAppointmentsNotification != null)
+                notifications.Add(dailyAppointmentsNotification);
 
             notifications.AddRange(reminderFilterService.GetReminders(todayNotifications));
         }

@@ -2,5 +2,5 @@
 
 public interface IDailyAppointmentService
 {
-    ICalendarNotification? GetDailyAppointments(IEnumerable<ICalendarNotification> calendarNotification);
+    ICalendarNotification? GetDailyAppointments(IEnumerable<ICalendarNotification> calendarNotifications);
 }

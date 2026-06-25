@@ -7,7 +7,7 @@ public class NotificationCache(ISettingsProvider settingsProvider) : INotificati
 {
     private readonly MemoryCache cache = new(new MemoryCacheOptions());
     private readonly TimeSpan ttlConfigure = TimeSpan.FromMinutes(settingsProvider.ReminderOffsetMinutes);
-    private readonly TimeSpan ttlDaily = DateTime.Today.AddDays(1) - DateTime.Now;
+    private readonly TimeSpan ttlDaily = TimeSpan.FromDays(1);
 
     public bool Add(INotification notify, NotificationCacheKind cacheKind)
     {
