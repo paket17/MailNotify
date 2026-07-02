@@ -7,11 +7,12 @@ namespace MailNotify.Tests;
 public class NotificationCacheKindTests
 {
     [Fact]
-    public void Add_UsesNotificationIdAndCacheKindAsCacheKey()
+    public void Add_UsesNotificationIdLastUpdateAndCacheKindAsCacheKey()
     {
         var cache = new NotificationCache(CreateSettingsProvider());
-        var notification = new Notification { Id = "1", Subject = "Original" };
-        var changedNotification = new Notification { Id = "1", Subject = "Updated" };
+        var lastUpdate = DateTime.Today.AddHours(8);
+        var notification = new Notification { Id = "1", Subject = "Original", LastUpdate = lastUpdate };
+        var changedNotification = new Notification { Id = "1", Subject = "Updated", LastUpdate = lastUpdate };
 
         cache.Add(notification, NotificationCacheKind.Daily).Should().BeTrue();
 

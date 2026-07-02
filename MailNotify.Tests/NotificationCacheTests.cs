@@ -10,12 +10,27 @@ public class NotificationCacheTests
     public void Add_ReturnsTrueOnce_ThenDetectsDuplicateNotificationWithinSameCacheKind()
     {
         var cache = new NotificationCache(CreateSettingsProvider());
-        var notification = new Notification { Id = "1", Subject = "Daily" };
-        var duplicate = new Notification { Id = "1", Subject = "Updated subject" };
+        var lastUpdate = DateTime.Today.AddHours(8);
+        var notification = new Notification { Id = "1", Subject = "Daily", LastUpdate = lastUpdate };
+        var duplicate = new Notification { Id = "1", Subject = "Updated subject", LastUpdate = lastUpdate };
 
         cache.Add(notification, NotificationCacheKind.Configured).Should().BeTrue();
         cache.Contains(duplicate, NotificationCacheKind.Configured).Should().BeTrue();
         cache.Add(duplicate, NotificationCacheKind.Configured).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Add_TreatsSameNotificationIdWithDifferentLastUpdateAsNewNotification()
+    {
+        var cache = new NotificationCache(CreateSettingsProvider());
+        var notification = new Notification { Id = "1", LastUpdate = DateTime.Today.AddHours(8) };
+        var updatedNotification = new Notification { Id = "1", LastUpdate = DateTime.Today.AddHours(9) };
+
+        cache.Add(notification, NotificationCacheKind.Daily).Should().BeTrue();
+
+        cache.Contains(updatedNotification, NotificationCacheKind.Daily).Should().BeFalse();
+        cache.Add(updatedNotification, NotificationCacheKind.Daily).Should().BeTrue();
+        cache.Contains(updatedNotification, NotificationCacheKind.Daily).Should().BeTrue();
     }
 
     [Fact]

@@ -5,7 +5,9 @@ namespace MailNotify.Services;
 
 internal class DailyAppointmentService(
     ISettingsProvider settingsProvider,
-    INotificationCache notifyCache
+    INotificationCache notifyCache,
+    TimeProvider timeProvider,
+    DailyAppointmentNotificationState state
 ) : IDailyAppointmentService
 {
     private const int MaxAppointmentsInMessage = 3;
@@ -15,7 +17,7 @@ internal class DailyAppointmentService(
         if (!settingsProvider.NotifyDailyAppointments)
             return null;
 
-        var now = DateTime.Now;
+        var now = timeProvider.GetLocalNow().DateTime;
         var notifications = calendarNotifications
             .Where(n => n.Start > now)
             .Where(n => !notifyCache.Contains(n, NotificationCacheKind.Daily))
@@ -26,7 +28,7 @@ internal class DailyAppointmentService(
         return CreateDailyAppointmentsNotification(notifications, now);
     }
 
-    private static CalendarNotification? CreateDailyAppointmentsNotification(List<ICalendarNotification> appointments, DateTime start)
+    private CalendarNotification? CreateDailyAppointmentsNotification(List<ICalendarNotification> appointments, DateTime start)
     {
         if (appointments.Count == 0)
             return null;
@@ -39,10 +41,13 @@ internal class DailyAppointmentService(
             appointmentLines.AddRange(moreAppointments);
         }
 
+        var subject = IsFirstDailyAppointmentNotification()
+            ? "Appointments for today"
+            : "New appointments for today";
         return new CalendarNotification()
         {
             Id = $"today-appointments:{start:yyyy-MM-dd:HH-mm-ss}",
-            Subject = "New appointments for today",
+            Subject = subject,
             Message = string.Join(Environment.NewLine, appointmentLines),
             Start = start,
         };
@@ -51,5 +56,17 @@ internal class DailyAppointmentService(
     private static List<string> GetPreparedAppointmentTexts(IEnumerable<ICalendarNotification> appointments)
     {
         return [.. appointments.Select(i => $"{i.Start:HH:mm} {i.Subject}")];
+    }
+
+    private bool IsFirstDailyAppointmentNotification()
+    {
+        var today = timeProvider.GetLocalNow().Date;
+        if (state.LastNotificationDate != today)
+        {
+            state.LastNotificationDate = today;
+            return true;
+        }
+
+        return false;
     }
 }

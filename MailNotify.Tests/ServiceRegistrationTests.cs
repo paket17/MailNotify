@@ -37,9 +37,45 @@ public class ServiceRegistrationTests
             .Should().BeOfType<ExchangeCalendarNotify>();
         scope.ServiceProvider.GetRequiredService<IDailyAppointmentService>()
             .Should().BeOfType<DailyAppointmentService>();
+        scope.ServiceProvider.GetRequiredService<TimeProvider>()
+            .Should().Be(TimeProvider.System);
         scope.ServiceProvider.GetRequiredService<INotificationCache>()
             .Should().BeOfType<NotificationCache>();
         scope.ServiceProvider.GetRequiredService<ExchangeService>().Url
             .Should().Be(new Uri("https://exchange.test/EWS/Exchange.asmx"));
+    }
+
+    [Fact]
+    public void AddMailNotifyServices_RegistersDailyAppointmentStateAsSingletonAndServiceAsScoped()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ExchangeUrl"] = "https://exchange.test/EWS/Exchange.asmx",
+                ["ReminderOffsetMinutes"] = "15",
+                ["UpdateOffsetMinutes"] = "3",
+                ["AutoStart"] = "false",
+                ["NotifyDailyAppointments"] = "true"
+            })
+            .Build());
+        services.AddMailNotifyServices();
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        using var firstScope = provider.CreateScope();
+        using var secondScope = provider.CreateScope();
+
+        var firstService = firstScope.ServiceProvider.GetRequiredService<IDailyAppointmentService>();
+        var secondService = secondScope.ServiceProvider.GetRequiredService<IDailyAppointmentService>();
+        var firstState = firstScope.ServiceProvider.GetRequiredService<DailyAppointmentNotificationState>();
+        var secondState = secondScope.ServiceProvider.GetRequiredService<DailyAppointmentNotificationState>();
+
+        firstService.Should().NotBeSameAs(secondService);
+        firstState.Should().BeSameAs(secondState);
     }
 }

@@ -27,6 +27,6 @@ public class NotificationCache(ISettingsProvider settingsProvider) : INotificati
 
     private static string GetKey(INotification notification, NotificationCacheKind kind)
     {
-        return $"{kind}:{notification.Id}";
+        return $"{kind}:{notification.Id}:{notification.LastUpdate}";
     }
 }
