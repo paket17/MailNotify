@@ -32,8 +32,8 @@ public class NotifyWorkerTests
             .GetDailyAppointments(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)));
         filter.Received(1)
             .GetReminders(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)));
-        sender.Received(1).SendNotification(source[1]);
-        sender.DidNotReceive().SendNotification(source[0]);
+        sender.Received(1).SendNotification(source[1], true);
+        sender.DidNotReceive().SendNotification(source[0], false);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class NotifyWorkerTests
 
         newTodayAppointmentService.DidNotReceiveWithAnyArgs().GetDailyAppointments(default!);
         filter.DidNotReceiveWithAnyArgs().GetReminders(default!);
-        sender.DidNotReceiveWithAnyArgs().SendNotification(default!);
+        sender.DidNotReceiveWithAnyArgs().SendNotification(default!, default);
     }
 
     [Fact]
@@ -65,13 +65,13 @@ public class NotifyWorkerTests
         var newTodayAppointmentService = Substitute.For<IDailyAppointmentService>();
         getter.GetNotifications(Arg.Any<DateTime>(), Arg.Any<DateTime>()).Returns([first, second]);
         filter.GetReminders(Arg.Any<IEnumerable<ICalendarNotification>>()).Returns([first, second]);
-        sender.When(i => i.SendNotification(first)).Do(_ => throw new InvalidOperationException("Toast failed"));
+        sender.When(i => i.SendNotification(first, true)).Do(_ => throw new InvalidOperationException("Toast failed"));
         var worker = CreateWorker(getter, sender, filter, newTodayAppointmentService);
 
         await worker.Run(CancellationToken.None);
 
-        sender.Received(1).SendNotification(first);
-        sender.Received(1).SendNotification(second);
+        sender.Received(1).SendNotification(first, true);
+        sender.Received(1).SendNotification(second, true);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class NotifyWorkerTests
 
         await worker.Run(cts.Token);
 
-        sender.DidNotReceiveWithAnyArgs().SendNotification(default!);
+        sender.DidNotReceiveWithAnyArgs().SendNotification(default!, default);
     }
 
     [Fact]
@@ -117,12 +117,12 @@ public class NotifyWorkerTests
 
         Received.InOrder(() =>
         {
-            sender.SendNotification(newAppointments);
-            sender.SendNotification(source[1]);
+            sender.SendNotification(newAppointments, false);
+            sender.SendNotification(source[1], true);
         });
         filter.Received(1)
             .GetReminders(Arg.Is<IEnumerable<ICalendarNotification>>(items => items.SequenceEqual(source)));
-        sender.DidNotReceive().SendNotification(source[0]);
+        sender.DidNotReceive().SendNotification(source[0], false);
     }
 
     private static NotifyWorker CreateWorker(

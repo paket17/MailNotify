@@ -5,11 +5,14 @@ namespace MailNotify.Services;
 
 public class SendUwpNotify(INotificationCache notifyCache) : ISendNotifications<ICalendarNotification>
 {
-    public void SendNotification(ICalendarNotification notification)
+    public void SendNotification(ICalendarNotification notification, bool isExpired)
     {
         notifyCache.Add(notification, NotificationCacheKind.Configured);
         var toast = CreateToast(notification);
-        toast.Show();
+        if (isExpired)
+            toast.Show(toastNotification => toastNotification.ExpirationTime = notification.Start);
+        else
+            toast.Show();
     }
 
     internal static ToastContentBuilder CreateToast(ICalendarNotification notification)
