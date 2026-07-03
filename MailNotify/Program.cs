@@ -1,11 +1,22 @@
-using MailNotify;
 using MailNotify.Interfaces;
-using MailNotify.Logging;
 using MailNotify.Services;
+using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 var appDirectory = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
-builder.Logging.AddProvider(new FileLoggerProvider(Path.Combine(appDirectory, "logs")));
+var logsDirectory = Path.Combine(appDirectory, "logs");
+
+builder.Logging.ClearProviders();
+builder.Logging.AddSerilog(
+    new LoggerConfiguration()
+        .MinimumLevel.Information()
+        .WriteTo.File(
+            Path.Combine(logsDirectory, "log-.log"),
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 14)
+        .CreateLogger(),
+    dispose: true);
+
 builder.Services.AddMailNotifyServices();
 
 var host = builder.Build();
