@@ -11,7 +11,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
     public FileLoggerProvider(string logsDirectory)
     {
         _logsDirectory = logsDirectory 
-            ?? Path.Combine(AppContext.BaseDirectory, "logs");
+            ?? Path.Combine(Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory, "logs");
         try
         {
             Directory.CreateDirectory(_logsDirectory);

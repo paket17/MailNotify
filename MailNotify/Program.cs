@@ -4,7 +4,8 @@ using MailNotify.Logging;
 using MailNotify.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Logging.AddProvider(new FileLoggerProvider(Path.Combine(AppContext.BaseDirectory, "logs")));
+var appDirectory = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+builder.Logging.AddProvider(new FileLoggerProvider(Path.Combine(appDirectory, "logs")));
 builder.Services.AddMailNotifyServices();
 
 var host = builder.Build();
