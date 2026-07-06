@@ -28,11 +28,11 @@ public class SettingsProvider(IConfiguration configuration) : ISettingsProvider
         }
     }
 
-    public string ExchangeUrl
+    public string MailUrl
     {
         get
         {
-            var value = configuration.GetValue<string>(nameof(ExchangeUrl)) ?? string.Empty;
+            var value = configuration.GetValue<string>(nameof(MailUrl)) ?? string.Empty;
             if (value == string.Empty)
                 return value;
 

@@ -16,7 +16,7 @@ public class ServiceRegistrationTests
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ExchangeUrl"] = "https://exchange.test/EWS/Exchange.asmx",
+                ["MailUrl"] = "https://exchange.test",
                 ["ReminderOffsetMinutes"] = "15",
                 ["UpdateOffsetMinutes"] = "3",
                 ["AutoStart"] = "false",
@@ -53,7 +53,7 @@ public class ServiceRegistrationTests
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ExchangeUrl"] = "https://exchange.test/EWS/Exchange.asmx",
+                ["MailUrl"] = "https://exchange.test",
                 ["ReminderOffsetMinutes"] = "15",
                 ["UpdateOffsetMinutes"] = "3",
                 ["AutoStart"] = "false",

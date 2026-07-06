@@ -9,10 +9,10 @@ public class ExchangeWebServiceTests
     public void GetExchangeService_ReturnsServiceConfiguredFromSettings()
     {
         var settings = Substitute.For<ISettingsProvider>();
-        settings.ExchangeUrl.Returns("https://exchange.test/EWS/Exchange.asmx");
+        settings.MailUrl.Returns("https://exchange.test/EWS/Exchange.asmx");
         var service = new ExchangeWebService(settings).GetExchangeService();
 
-        service.Url.Should().Be(new Uri(settings.ExchangeUrl));
+        service.Url.Should().Be(new Uri(settings.MailUrl));
         service.Credentials.Should().NotBeNull();
     }
 }

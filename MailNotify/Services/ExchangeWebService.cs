@@ -17,7 +17,7 @@ public class ExchangeWebService
         exchangeService = new ExchangeService
         {
             Credentials = CredentialCache.DefaultNetworkCredentials,
-            Url = new Uri(settingsProvider.ExchangeUrl)
+            Url = new Uri(settingsProvider.MailUrl)
         };
     }
 }
