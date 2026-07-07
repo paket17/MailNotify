@@ -148,7 +148,9 @@ public class DailyAppointmentServiceTests
     public void GetDailyAppointments_ReturnsUpdatedAppointment_WhenContentChanged()
     {
         var settingsProvider = CreateEnabledSettingsProvider();
-        var notificationCache = new NotificationCache(CreateCacheSettingsProvider());
+        var notificationCache = new NotificationCache(
+            CreateCacheSettingsProvider(),
+            new NotificationHashBuilderResolver(new NotificationHashBuilder(), new CalendarNotificationHashBuilder()));
         var timeProvider = CreateTimeProvider(Now);
         var state = new DailyAppointmentNotificationState();
         var service = new DailyAppointmentService(settingsProvider, notificationCache, timeProvider, state);

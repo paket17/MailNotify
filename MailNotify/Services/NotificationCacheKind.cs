@@ -1,4 +1,4 @@
-﻿namespace MailNotify.Services;
+namespace MailNotify.Services;
 
 public enum NotificationCacheKind
 {

@@ -1,4 +1,4 @@
-﻿using MailNotify.Services;
+using MailNotify.Services;
 
 namespace MailNotify.Interfaces;
 

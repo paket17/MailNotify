@@ -41,6 +41,12 @@ public class ServiceRegistrationTests
             .Should().Be(TimeProvider.System);
         scope.ServiceProvider.GetRequiredService<INotificationCache>()
             .Should().BeOfType<NotificationCache>();
+        scope.ServiceProvider.GetRequiredService<INotificationHashBuilder<INotification>>()
+            .Should().BeOfType<NotificationHashBuilder>();
+        scope.ServiceProvider.GetRequiredService<INotificationHashBuilder<ICalendarNotification>>()
+            .Should().BeOfType<CalendarNotificationHashBuilder>();
+        scope.ServiceProvider.GetRequiredService<INotificationHashBuilderResolver>()
+            .Should().BeOfType<NotificationHashBuilderResolver>();
         scope.ServiceProvider.GetRequiredService<ExchangeService>().Url
             .Should().Be(new Uri("https://exchange.test/EWS/Exchange.asmx"));
     }

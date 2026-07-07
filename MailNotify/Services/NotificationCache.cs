@@ -1,11 +1,11 @@
 using MailNotify.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace MailNotify.Services;
 
-public class NotificationCache(ISettingsProvider settingsProvider) : INotificationCache
+public class NotificationCache(
+    ISettingsProvider settingsProvider,
+    INotificationHashBuilderResolver notificationHashBuilder) : INotificationCache
 {
     private readonly MemoryCache cache = new(new MemoryCacheOptions());
     private readonly TimeSpan ttlConfigure = TimeSpan.FromMinutes(settingsProvider.ReminderOffsetMinutes);
@@ -27,14 +27,8 @@ public class NotificationCache(ISettingsProvider settingsProvider) : INotificati
     public void Remove(INotification notify, NotificationCacheKind kind) =>
         cache.Remove(GetKey(notify, kind));
 
-    private static string GetKey(INotification notification, NotificationCacheKind kind)
+    private string GetKey(INotification notification, NotificationCacheKind kind)
     {
-        return $"{kind}:{notification.Id}:{GetNotificationHash(notification)}";
-    }
-
-    private static string GetNotificationHash(INotification notification)
-    {
-        var data = $"{notification.Subject}:{notification.Message}";
-        return Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(data)));
+        return $"{kind}:{notification.Id}:{notificationHashBuilder.Build(notification)}";
     }
 }

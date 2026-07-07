@@ -1,4 +1,4 @@
-﻿using MailNotify.Interfaces;
+using MailNotify.Interfaces;
 using Microsoft.Exchange.WebServices.Data;
 using System.Net;
 

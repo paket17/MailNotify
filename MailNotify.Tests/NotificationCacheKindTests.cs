@@ -9,7 +9,7 @@ public class NotificationCacheKindTests
     [Fact]
     public void Add_UsesNotificationIdContentAndCacheKindAsCacheKey()
     {
-        var cache = new NotificationCache(CreateSettingsProvider());
+        var cache = CreateCache();
         var lastUpdate = DateTime.Today.AddHours(8);
         var notification = new Notification { Id = "1", Subject = "Original", LastUpdate = lastUpdate };
         var changedNotification = new Notification { Id = "1", Subject = "Updated", LastUpdate = lastUpdate };
@@ -24,7 +24,7 @@ public class NotificationCacheKindTests
     [Fact]
     public void Remove_EvictsNotificationOnlyFromRequestedCacheKind()
     {
-        var cache = new NotificationCache(CreateSettingsProvider());
+        var cache = CreateCache();
         var notification = new Notification { Id = "1", Subject = "Original" };
 
         cache.Add(notification, NotificationCacheKind.Daily);
@@ -41,4 +41,10 @@ public class NotificationCacheKindTests
         settingsProvider.ReminderOffsetMinutes.Returns(15);
         return settingsProvider;
     }
+
+    private static NotificationCache CreateCache() =>
+        new(CreateSettingsProvider(), CreateHashBuilderResolver());
+
+    private static INotificationHashBuilderResolver CreateHashBuilderResolver() =>
+        new NotificationHashBuilderResolver(new NotificationHashBuilder(), new CalendarNotificationHashBuilder());
 }

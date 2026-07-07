@@ -17,6 +17,9 @@ public static class MailNotifyServiceCollectionExtensions
         services.AddScoped<NotifyWorker>();
         services.AddSingleton<IAutoStartService, WindowsAutoStartService>();
         services.AddSingleton<ISettingsProvider, SettingsProvider>();
+        services.AddSingleton<INotificationHashBuilder<INotification>, NotificationHashBuilder>();
+        services.AddSingleton<INotificationHashBuilder<ICalendarNotification>, CalendarNotificationHashBuilder>();
+        services.AddSingleton<INotificationHashBuilderResolver, NotificationHashBuilderResolver>();
         services.AddSingleton<INotificationCache, NotificationCache>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<DailyAppointmentNotificationState>();

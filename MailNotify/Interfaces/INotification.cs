@@ -1,4 +1,4 @@
-﻿namespace MailNotify.Interfaces;
+namespace MailNotify.Interfaces;
 
 public interface INotification
 {
