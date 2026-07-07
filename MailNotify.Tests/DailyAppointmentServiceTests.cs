@@ -145,22 +145,22 @@ public class DailyAppointmentServiceTests
     }
 
     [Fact]
-    public void GetDailyAppointments_ReturnsUpdatedAppointment_WhenLastUpdateChanged()
+    public void GetDailyAppointments_ReturnsUpdatedAppointment_WhenContentChanged()
     {
         var settingsProvider = CreateEnabledSettingsProvider();
         var notificationCache = new NotificationCache(CreateCacheSettingsProvider());
         var timeProvider = CreateTimeProvider(Now);
         var state = new DailyAppointmentNotificationState();
         var service = new DailyAppointmentService(settingsProvider, notificationCache, timeProvider, state);
-        var appointment = CreateNotification("meeting", Now.DateTime.AddMinutes(10), Now.Date.AddHours(8));
-        var updatedAppointment = CreateNotification("meeting", Now.DateTime.AddMinutes(10), Now.Date.AddHours(9));
+        var appointment = CreateNotification("meeting", Now.DateTime.AddMinutes(10), subject: "meeting");
+        var updatedAppointment = CreateNotification("meeting", Now.DateTime.AddMinutes(10), subject: "meeting updated");
 
         service.GetDailyAppointments([appointment]);
         var notification = service.GetDailyAppointments([updatedAppointment]);
 
         notification.Should().NotBeNull();
         notification!.Subject.Should().Be("New appointments for today");
-        notification.Message.Should().Contain("meeting");
+        notification.Message.Should().Contain("meeting updated");
     }
 
     private static ISettingsProvider CreateEnabledSettingsProvider()
@@ -177,11 +177,11 @@ public class DailyAppointmentServiceTests
         return settingsProvider;
     }
 
-    private static ICalendarNotification CreateNotification(string id, DateTime start, DateTime? lastUpdate = null) =>
+    private static ICalendarNotification CreateNotification(string id, DateTime start, DateTime? lastUpdate = null, string? subject = null) =>
         new CalendarNotification
         {
             Id = id,
-            Subject = id,
+            Subject = subject ?? id,
             Start = start,
             Duration = TimeSpan.FromMinutes(30),
             LastUpdate = lastUpdate ?? default
