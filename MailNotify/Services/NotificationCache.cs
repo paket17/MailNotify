@@ -1,5 +1,7 @@
 using MailNotify.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace MailNotify.Services;
 
@@ -27,6 +29,12 @@ public class NotificationCache(ISettingsProvider settingsProvider) : INotificati
 
     private static string GetKey(INotification notification, NotificationCacheKind kind)
     {
-        return $"{kind}:{notification.Id}:{notification.LastUpdate}";
+        return $"{kind}:{notification.Id}:{GetNotificationHash(notification)}";
+    }
+
+    private static string GetNotificationHash(INotification notification)
+    {
+        var data = $"{notification.Subject}:{notification.Message}";
+        return Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(data)));
     }
 }
