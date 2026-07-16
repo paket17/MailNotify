@@ -2,8 +2,12 @@ using MailNotify.Interfaces;
 using MailNotify.Services;
 using Serilog;
 
-var builder = Host.CreateApplicationBuilder(args);
 var appDirectory = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+{
+    Args = args,
+    ContentRootPath = appDirectory
+});
 var logsDirectory = Path.Combine(appDirectory, "logs");
 
 builder.Logging.ClearProviders();
