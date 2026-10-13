@@ -22,13 +22,20 @@ public class SendUwpNotify(INotificationCache notifyCache) : ISendNotifications<
 
         if (string.IsNullOrWhiteSpace(notification.Message))
         {
-            toast
-                .AddText(notification.Location)
-                .AddText($"{notification.Start:HH:mm} - {(notification.Start + notification.Duration):HH:mm}");
+            toast.AddText($"{notification.Start:HH:mm} - {(notification.Start + notification.Duration):HH:mm}");
+            if (!string.IsNullOrWhiteSpace(notification.Location))
+                toast.AddText(notification.Location);
         }
         else
         {
-            toast.AddText(notification.Message);
+            var lines = notification.Message.Split(["\r\n", "\r", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var group = new AdaptiveGroup();
+            var subgroup = new AdaptiveSubgroup();
+            foreach (var line in lines)
+                subgroup.Children.Add(new AdaptiveText { Text = line });
+
+            group.Children.Add(subgroup);
+            toast.AddVisualChild(group);
         }
 
         toast
