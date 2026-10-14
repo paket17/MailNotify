@@ -4,21 +4,32 @@ namespace MailNotify;
 
 public class Worker(ILogger<Worker> logger, ISettingsProvider settingsProvider, IServiceScopeFactory scopeFactory) : BackgroundService
 {
+    private const int ReminderCheckIntervalSeconds = 30;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Run");
+        var getAppointmentsTask = RunGetAppointmentsLoopAsync(stoppingToken);
+        var reminderTask = RunReminderLoopAsync(stoppingToken);
+
+        await Task.WhenAll(getAppointmentsTask, reminderTask);
+    }
+
+    private async Task RunGetAppointmentsLoopAsync(CancellationToken stoppingToken)
+    {
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 using var scope = scopeFactory.CreateScope();
                 var notifyWorker = scope.ServiceProvider.GetRequiredService<NotifyWorker>();
-                await notifyWorker.Run(stoppingToken);
+                notifyWorker.GetAppointments(stoppingToken);
+                notifyWorker.CheckReminders(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {}
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error in NotifyWorker");
+                logger.LogError(ex, "Error in NotifyWorker getting appointments");
             }
 
             try
@@ -28,6 +39,33 @@ public class Worker(ILogger<Worker> logger, ISettingsProvider settingsProvider, 
             catch (OperationCanceledException)
             {
                 break;
+            }
+        }
+    }
+
+    private async Task RunReminderLoopAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(ReminderCheckIntervalSeconds), stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var notifyWorker = scope.ServiceProvider.GetRequiredService<NotifyWorker>();
+                notifyWorker.CheckReminders(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) {}
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error in NotifyWorker reminders");
             }
         }
     }

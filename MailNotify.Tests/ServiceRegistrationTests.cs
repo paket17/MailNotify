@@ -47,6 +47,7 @@ public class ServiceRegistrationTests
             .Should().BeOfType<CalendarNotificationHashBuilder>();
         scope.ServiceProvider.GetRequiredService<INotificationHashBuilderResolver>()
             .Should().BeOfType<NotificationHashBuilderResolver>();
+        scope.ServiceProvider.GetRequiredService<AppointmentStore>().Should().NotBeNull();
         scope.ServiceProvider.GetRequiredService<ExchangeService>().Url
             .Should().Be(new Uri("https://exchange.test/EWS/Exchange.asmx"));
     }
@@ -80,8 +81,11 @@ public class ServiceRegistrationTests
         var secondService = secondScope.ServiceProvider.GetRequiredService<IDailyAppointmentService>();
         var firstState = firstScope.ServiceProvider.GetRequiredService<DailyAppointmentNotificationState>();
         var secondState = secondScope.ServiceProvider.GetRequiredService<DailyAppointmentNotificationState>();
+        var firstStore = firstScope.ServiceProvider.GetRequiredService<AppointmentStore>();
+        var secondStore = secondScope.ServiceProvider.GetRequiredService<AppointmentStore>();
 
         firstService.Should().NotBeSameAs(secondService);
         firstState.Should().BeSameAs(secondState);
+        firstStore.Should().BeSameAs(secondStore);
     }
 }

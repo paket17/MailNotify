@@ -1,4 +1,5 @@
 using MailNotify.Interfaces;
+using MailNotify.Services;
 
 namespace MailNotify;
 
@@ -7,31 +8,43 @@ public class NotifyWorker(
     ISendNotifications<ICalendarNotification> notifySender,
     IReminderFilterService<ICalendarNotification> reminderFilterService,
     IDailyAppointmentService dailyAppointmentService,
+    AppointmentStore appointmentStore,
     ILogger<NotifyWorker> logger)
 {
-    public async Task Run(CancellationToken cancellationToken)
+    public void GetAppointments(CancellationToken cancellationToken)
     {
         var start = DateTime.Today;
         var end = DateTime.Today.AddDays(1).AddSeconds(-1);
-        var expiringNotifications = new List<ICalendarNotification>();
         var notifications = new List<ICalendarNotification>();
 
         TryCatch(
             () =>
             {
                 var todayNotifications = notifyGetter.GetNotifications(start, end).ToList();
+                appointmentStore.SetAppointments(todayNotifications);
+
                 var dailyAppointmentsNotification = dailyAppointmentService.GetDailyAppointments(todayNotifications);
                 if (dailyAppointmentsNotification != null)
                     notifications.Add(dailyAppointmentsNotification);
 
-                expiringNotifications.AddRange(reminderFilterService.GetReminders(todayNotifications));
+                SendNotification(notifications, (n) => notifySender.SendNotification(n, false), cancellationToken);
             },
             ex => logger.LogError(ex, "Failed to get notifications"));
+    }
 
-        SendNotification(notifications, (n) => notifySender.SendNotification(n, false), cancellationToken);
+    public void CheckReminders(CancellationToken cancellationToken)
+    {
+        var expiringNotifications = new List<ICalendarNotification>();
+
+        TryCatch(
+            () =>
+            {
+                var storedAppointments = appointmentStore.GetAppointments();
+                expiringNotifications.AddRange(reminderFilterService.GetReminders(storedAppointments));
+            },
+            ex => logger.LogError(ex, "Failed to filter reminders"));
+
         SendNotification(expiringNotifications, (n) => notifySender.SendNotification(n, true), cancellationToken);
-
-        await Task.CompletedTask;
     }
 
     private void SendNotification(List<ICalendarNotification> notifications, Action<ICalendarNotification> sendAction, CancellationToken cancellationToken)
