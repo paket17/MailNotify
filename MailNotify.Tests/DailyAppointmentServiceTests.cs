@@ -71,7 +71,7 @@ public class DailyAppointmentServiceTests
     }
 
     [Fact]
-    public void GetDailyAppointments_ShowsFirstThreeAppointmentsRemainderCount_AndRemainingAppointments()
+    public void GetDailyAppointments_ShowsFirstThreeAppointmentsAndRemainderCountWithRemainingAppointments()
     {
         var settingsProvider = CreateEnabledSettingsProvider();
         var notificationCache = Substitute.For<INotificationCache>();
@@ -85,14 +85,61 @@ public class DailyAppointmentServiceTests
         var notification = service.GetDailyAppointments(appointments);
 
         notification.Should().NotBeNull();
-        notification!.Message.Should().Contain("meeting-1");
-        notification.Message.Should().Contain("meeting-3");
-        notification.Message.Should().Contain("and 4 more");
-        notification.Message.Should().Contain("meeting-4");
-        notification.Message.Should().Contain("meeting-5");
-        notification.Message.Should().Contain("meeting-6");
-        notification.Message.Should().Contain("meeting-7");
+        var lines = notification!.Message!.Split(Environment.NewLine);
+        lines.Should().Contain("and 4 more");
+        var remainderIndex = Array.IndexOf(lines, "and 4 more");
+        remainderIndex.Should().Be(3);
+        lines.Take(3).Should().OnlyContain(l => l.Contains("meeting-"));
+        lines.Skip(remainderIndex + 1).Should().Contain(l => l.Contains("meeting-4"));
+        lines.Skip(remainderIndex + 1).Should().Contain(l => l.Contains("meeting-7"));
         appointments.ToList().ForEach(i => notificationCache.Received(1).Add(i, NotificationCacheKind.Daily));
+    }
+
+    [Fact]
+    public void GetDailyAppointments_ShowsAllAppointmentsWithoutRemainder_WhenCountDoesNotExceedMax()
+    {
+        var settingsProvider = CreateEnabledSettingsProvider();
+        var notificationCache = Substitute.For<INotificationCache>();
+        var timeProvider = CreateTimeProvider(Now);
+        var appointments = Enumerable.Range(1, 4)
+            .Select(i => CreateNotification($"meeting-{i}", Now.DateTime.AddMinutes(i)))
+            .ToArray();
+        var state = new DailyAppointmentNotificationState();
+        var service = new DailyAppointmentService(settingsProvider, notificationCache, timeProvider, state);
+
+        var notification = service.GetDailyAppointments(appointments);
+
+        notification.Should().NotBeNull();
+        notification!.Message.Should().Contain("meeting-1");
+        notification.Message.Should().Contain("meeting-4");
+        notification.Message.Should().NotContain("more");
+    }
+
+    [Fact]
+    public void GetDailyAppointments_TruncatesLongSubjectsForVisibleAppointments_AndPreservesHidden()
+    {
+        var settingsProvider = CreateEnabledSettingsProvider();
+        var notificationCache = Substitute.For<INotificationCache>();
+        var timeProvider = CreateTimeProvider(Now);
+        var longSubject = new string('a', 60);
+        var appointments = new[]
+        {
+            CreateNotification("1", Now.DateTime.AddMinutes(10), subject: longSubject),
+            CreateNotification("2", Now.DateTime.AddMinutes(20), subject: "Short"),
+            CreateNotification("3", Now.DateTime.AddMinutes(30), subject: "Another"),
+            CreateNotification("4", Now.DateTime.AddMinutes(40), subject: "Another 2"),
+            CreateNotification("5", Now.DateTime.AddMinutes(50), subject: "Hidden " + longSubject)
+        };
+        var state = new DailyAppointmentNotificationState();
+        var service = new DailyAppointmentService(settingsProvider, notificationCache, timeProvider, state);
+
+        var notification = service.GetDailyAppointments(appointments);
+
+        notification.Should().NotBeNull();
+        var lines = notification!.Message!.Split(Environment.NewLine);
+        lines[0].Should().EndWith("…");
+        lines[0].Length.Should().Be(41); // "HH:mm " (6) + 34 chars + "…" (1) = 41
+        lines[5].Should().Contain("Hidden " + longSubject); // hidden meeting preserved without truncation
     }
 
     [Fact]

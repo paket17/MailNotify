@@ -10,7 +10,8 @@ internal class DailyAppointmentService(
     DailyAppointmentNotificationState state
 ) : IDailyAppointmentService
 {
-    private const int MaxAppointmentsInMessage = 3;
+    private const int MaxAppointmentsInMessage = 4;
+    private const int MaxSubjectLength = 35;
 
     public ICalendarNotification? GetDailyAppointments(IEnumerable<ICalendarNotification> calendarNotifications)
     {
@@ -33,12 +34,15 @@ internal class DailyAppointmentService(
         if (appointments.Count == 0)
             return null;
 
-        var appointmentLines = GetPreparedAppointmentTexts(appointments.Take(MaxAppointmentsInMessage));
-        if (appointments.Count > MaxAppointmentsInMessage)
+        List<string> appointmentLines;
+        if (appointments.Count <= MaxAppointmentsInMessage)
+            appointmentLines = GetPreparedAppointmentTexts(appointments, truncate: true);
+        else
         {
-            appointmentLines.Add($"and {appointments.Count - MaxAppointmentsInMessage} more");
-            var moreAppointments = GetPreparedAppointmentTexts(appointments.Skip(MaxAppointmentsInMessage));
-            appointmentLines.AddRange(moreAppointments);
+            var visibleCount = MaxAppointmentsInMessage - 1;
+            appointmentLines = GetPreparedAppointmentTexts(appointments.Take(visibleCount), truncate: true);
+            appointmentLines.Add($"and {appointments.Count - visibleCount} more");
+            appointmentLines.AddRange(GetPreparedAppointmentTexts(appointments.Skip(visibleCount), truncate: false));
         }
 
         var subject = IsFirstDailyAppointmentNotification()
@@ -53,9 +57,21 @@ internal class DailyAppointmentService(
         };
     }
 
-    private static List<string> GetPreparedAppointmentTexts(IEnumerable<ICalendarNotification> appointments)
+    private static List<string> GetPreparedAppointmentTexts(IEnumerable<ICalendarNotification> appointments, bool truncate)
     {
-        return [.. appointments.Select(i => $"{i.Start:HH:mm} {i.Subject}")];
+        return [.. appointments.Select(i => $"{i.Start:HH:mm} {PrepareSubject(i.Subject, truncate)}")];
+    }
+
+    private static string PrepareSubject(string? subject, bool truncate)
+    {
+        if (string.IsNullOrWhiteSpace(subject))
+            return string.Empty;
+
+        var cleaned = subject.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ').Trim();
+        if (truncate && cleaned.Length > MaxSubjectLength)
+            return cleaned[..(MaxSubjectLength - 1)] + "…";
+
+        return cleaned;
     }
 
     private bool IsFirstDailyAppointmentNotification()

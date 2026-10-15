@@ -43,7 +43,7 @@ public class SendUwpNotifyTests
         xml.Should().Contain("New appointments for today");
         xml.Should().Contain("10:00 Planning");
         xml.Should().Contain("14:00 Review");
-        xml.Should().Contain("<group><subgroup><text>10:00 Planning</text><text>14:00 Review</text></subgroup></group>");
+        xml.Should().NotContain("<group>");
         xml.Should().NotContain("09:00 - 09:00");
     }
 
@@ -75,5 +75,67 @@ public class SendUwpNotifyTests
         xmlWithoutLoc.Should().Contain("11:00 - 11:30");
         xmlWithoutLoc.Should().NotContain("<text></text>");
         xmlWithoutLoc.Should().NotContain("<text />");
+    }
+
+    [Fact]
+    public void CreateToast_IncludesFullMessageInSingleTextElement_ForNativeHoverTooltip()
+    {
+        var message = string.Join(Environment.NewLine, [
+            "09:30 Meeting 1",
+            "11:00 Meeting 2",
+            "and 2 more",
+            "16:00 Meeting 3",
+            "17:00 Meeting 4"
+        ]);
+        var notification = new CalendarNotification
+        {
+            Subject = "Appointments for today",
+            Message = message,
+            Start = new DateTime(2026, 6, 19, 9, 0, 0),
+            Duration = TimeSpan.Zero
+        };
+
+        var xml = SendUwpNotify.CreateToast(notification).GetXml().GetXml();
+
+        xml.Should().Contain("Appointments for today");
+        xml.Should().Contain("and 2 more");
+        xml.Should().Contain("16:00 Meeting 3");
+        xml.Should().Contain("17:00 Meeting 4");
+        xml.Should().NotContain("<group>");
+        xml.Should().NotContain("<subgroup>");
+    }
+
+    [Fact]
+    public void CreateToast_TruncatesLongSubjectWithEllipsis_ForReminderNotification()
+    {
+        var longSubject = "1aergaergaergaergaergaergaergaergaergaergaergaergaergaergaergaergaergaergaergaer";
+        var notification = new CalendarNotification
+        {
+            Subject = longSubject,
+            Start = new DateTime(2026, 6, 19, 10, 30, 0),
+            Duration = TimeSpan.FromMinutes(30)
+        };
+
+        var xml = SendUwpNotify.CreateToast(notification).GetXml().GetXml();
+
+        var expectedSubject = longSubject[..34] + "…";
+        xml.Should().Contain($"<text>{expectedSubject}</text>");
+        xml.Should().NotContain(longSubject);
+        xml.Should().Contain("10:30 - 11:00");
+    }
+
+    [Fact]
+    public void CreateToast_SanitizesNewlinesInSubject_ForReminderNotification()
+    {
+        var notification = new CalendarNotification
+        {
+            Subject = "Line 1\r\nLine 2",
+            Start = new DateTime(2026, 6, 19, 10, 0, 0),
+            Duration = TimeSpan.FromMinutes(30)
+        };
+
+        var xml = SendUwpNotify.CreateToast(notification).GetXml().GetXml();
+
+        xml.Should().Contain("<text>Line 1 Line 2</text>");
     }
 }

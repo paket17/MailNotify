@@ -5,6 +5,8 @@ namespace MailNotify.Services;
 
 public class SendUwpNotify(INotificationCache notifyCache) : ISendNotifications<ICalendarNotification>
 {
+    private const int MaxSubjectLength = 35;
+
     public void SendNotification(ICalendarNotification notification, bool isExpired)
     {
         notifyCache.Add(notification, NotificationCacheKind.Configured);
@@ -17,25 +19,19 @@ public class SendUwpNotify(INotificationCache notifyCache) : ISendNotifications<
 
     internal static ToastContentBuilder CreateToast(ICalendarNotification notification)
     {
-        var toast = new ToastContentBuilder()
-            .AddText(notification.Subject);
+        var toast = new ToastContentBuilder();
 
         if (string.IsNullOrWhiteSpace(notification.Message))
         {
+            toast.AddText(PrepareSubject(notification.Subject));
             toast.AddText($"{notification.Start:HH:mm} - {(notification.Start + notification.Duration):HH:mm}");
             if (!string.IsNullOrWhiteSpace(notification.Location))
                 toast.AddText(notification.Location);
         }
         else
         {
-            var lines = notification.Message.Split(["\r\n", "\r", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var group = new AdaptiveGroup();
-            var subgroup = new AdaptiveSubgroup();
-            foreach (var line in lines)
-                subgroup.Children.Add(new AdaptiveText { Text = line });
-
-            group.Children.Add(subgroup);
-            toast.AddVisualChild(group);
+            toast.AddText(notification.Subject);
+            toast.AddText(notification.Message, hintWrap: true);
         }
 
         toast
@@ -45,5 +41,17 @@ public class SendUwpNotify(INotificationCache notifyCache) : ISendNotifications<
         return Uri.TryCreate(notification.WebUrl, UriKind.Absolute, out var activationUri)
             ? toast.SetProtocolActivation(activationUri)
             : toast;
+    }
+
+    private static string PrepareSubject(string? subject)
+    {
+        if (string.IsNullOrWhiteSpace(subject))
+            return string.Empty;
+
+        var cleaned = subject.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ').Trim();
+        if (cleaned.Length > MaxSubjectLength)
+            return cleaned[..(MaxSubjectLength - 1)] + "…";
+
+        return cleaned;
     }
 }
