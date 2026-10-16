@@ -1,4 +1,5 @@
 <Solution>
-  <Project Path="MailNotify/MailNotify.csproj" />
+  <Project Path="MailNotify.Core/MailNotify.Core.csproj" />
+  <Project Path="MailNotify.Windows/MailNotify.Windows.csproj" />
   <Project Path="MailNotify.Tests/MailNotify.Tests.csproj" />
 </Solution>

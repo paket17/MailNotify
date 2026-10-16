@@ -1,11 +1,13 @@
+using MailNotify.Entities;
 using MailNotify.Interfaces;
 using Microsoft.Exchange.WebServices.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MailNotify.Services;
 
-public static class MailNotifyServiceCollectionExtensions
+public static class MailNotifyCoreServiceCollectionExtensions
 {
-    public static IServiceCollection AddMailNotifyServices(this IServiceCollection services)
+    public static IServiceCollection AddMailNotifyCore(this IServiceCollection services)
     {
         services.AddHostedService<Worker>();
 
@@ -13,9 +15,7 @@ public static class MailNotifyServiceCollectionExtensions
         services.AddScoped<ExchangeService>(provider =>
             provider.GetRequiredService<ExchangeWebService>().GetExchangeService());
         services.AddScoped<IGetNotifications<ICalendarNotification>, ExchangeCalendarNotify>();
-        services.AddScoped<ISendNotifications<ICalendarNotification>, SendUwpNotify>();
         services.AddScoped<NotifyWorker>();
-        services.AddSingleton<IAutoStartService, WindowsAutoStartService>();
         services.AddSingleton<ISettingsProvider, SettingsProvider>();
         services.AddSingleton<INotificationHashBuilder<INotification>, NotificationHashBuilder>();
         services.AddSingleton<INotificationHashBuilder<ICalendarNotification>, CalendarNotificationHashBuilder>();
