@@ -3,6 +3,7 @@ using MailNotify.Services;
 using Microsoft.Exchange.WebServices.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace MailNotify.Tests;
 
@@ -50,6 +51,53 @@ public class ServiceRegistrationTests
         scope.ServiceProvider.GetRequiredService<AppointmentStore>().Should().NotBeNull();
         scope.ServiceProvider.GetRequiredService<ExchangeService>().Url
             .Should().Be(new Uri("https://exchange.test/EWS/Exchange.asmx"));
+
+        var hostedServices = provider.GetServices<IHostedService>();
+        hostedServices.Should().Contain(s => s is Worker);
+        if (OperatingSystem.IsWindows())
+        {
+            provider.GetRequiredService<IWindowsThemeService>().Should().BeOfType<WindowsThemeService>();
+            provider.GetRequiredService<ITrayMenuPresenter>().Should().BeOfType<TrayMenuPresenter>();
+            provider.GetRequiredService<ITrayIconManager>().Should().BeOfType<TrayIconManager>();
+            hostedServices.Should().Contain(s => s is WindowsTrayService);
+        }
+        else
+        {
+            hostedServices.Should().NotContain(s => s is WindowsTrayService);
+        }
+    }
+
+    [Fact]
+    public void AddMailNotifyCore_RegistersResolvableWorkerGraph_WithoutPlatformServices()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MailUrl"] = "https://exchange.test",
+                ["ReminderOffsetMinutes"] = "15",
+                ["UpdateOffsetMinutes"] = "3",
+                ["AutoStart"] = "false",
+                ["NotifyDailyAppointments"] = "true"
+            })
+            .Build());
+        services.AddMailNotifyCore();
+        services.AddScoped(_ => Substitute.For<ISendNotifications<ICalendarNotification>>());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        using var scope = provider.CreateScope();
+
+        scope.ServiceProvider.GetRequiredService<NotifyWorker>().Should().NotBeNull();
+        scope.ServiceProvider.GetRequiredService<AppointmentStore>().Should().NotBeNull();
+
+        var hostedServices = provider.GetServices<IHostedService>();
+        hostedServices.Should().Contain(s => s is Worker);
+        hostedServices.Should().NotContain(s => s is WindowsTrayService);
     }
 
     [Fact]

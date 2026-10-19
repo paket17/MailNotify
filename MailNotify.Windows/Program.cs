@@ -22,6 +22,10 @@ builder.Logging.AddSerilog(
     dispose: true);
 
 builder.Services.AddMailNotifyServices();
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.ServicesStartConcurrently = true;
+});
 
 var host = builder.Build();
 host.Services.GetRequiredService<IAutoStartService>().Configure();

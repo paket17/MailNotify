@@ -46,6 +46,20 @@ public class AppointmentStoreTests
     }
 
     [Fact]
+    public void AppointmentsChanged_FiresWhenAppointmentsAreSetOrCleared()
+    {
+        var store = new AppointmentStore();
+        var eventCount = 0;
+        store.AppointmentsChanged += () => eventCount++;
+
+        store.SetAppointments([Substitute.For<ICalendarNotification>()]);
+        eventCount.Should().Be(1);
+
+        store.Clear();
+        eventCount.Should().Be(2);
+    }
+
+    [Fact]
     public async Task ConcurrentAccess_RemainsThreadSafe()
     {
         var store = new AppointmentStore();

@@ -31,7 +31,7 @@ public class SettingsProviderTests
 
         provider.ReminderOffsetMinutes.Should().Be(7.5);
         provider.UpdateOffsetMinutes.Should().Be(2);
-        provider.MailUrl.Should().Be("https://exchange.test/EWS/Exchange.asmx");
+        provider.MailUrl.Should().Be("https://exchange.test");
         provider.AutoStart.Should().BeFalse();
         provider.NotifyDailyAppointments.Should().BeFalse();
     }

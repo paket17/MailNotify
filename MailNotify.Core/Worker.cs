@@ -9,8 +9,8 @@ public class Worker(ILogger<Worker> logger, ISettingsProvider settingsProvider, 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Run");
-        var getAppointmentsTask = RunGetAppointmentsLoopAsync(stoppingToken);
-        var reminderTask = RunReminderLoopAsync(stoppingToken);
+        var getAppointmentsTask = Task.Run(() => RunGetAppointmentsLoopAsync(stoppingToken), stoppingToken);
+        var reminderTask = Task.Run(() => RunReminderLoopAsync(stoppingToken), stoppingToken);
 
         await Task.WhenAll(getAppointmentsTask, reminderTask);
     }

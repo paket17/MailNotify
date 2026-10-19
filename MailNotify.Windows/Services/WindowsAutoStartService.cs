@@ -7,8 +7,28 @@ public class WindowsAutoStartService(ILogger<WindowsAutoStartService> logger, IS
     : IAutoStartService
 {
     private const string RunRegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string AppName = "MailNotify";
 
-    public void Configure()
+    public bool IsEnabled
+    {
+        get
+        {
+            try
+            {
+                using var registryKey = Registry.CurrentUser.OpenSubKey(RunRegistryKeyPath, writable: false);
+                return registryKey?.GetValue(AppName) is not null || registryKey?.GetValue(AppDomain.CurrentDomain.FriendlyName) is not null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to check autostart status");
+                return false;
+            }
+        }
+    }
+
+    public void Configure() => SetEnabled(settingsProvider.AutoStart);
+
+    public void SetEnabled(bool enabled)
     {
         try
         {
@@ -19,7 +39,7 @@ public class WindowsAutoStartService(ILogger<WindowsAutoStartService> logger, IS
                 return;
             }
 
-            if (settingsProvider.AutoStart)
+            if (enabled)
                 TurnOn(registryKey);
             else
                 TurnOff(registryKey);
@@ -38,16 +58,19 @@ public class WindowsAutoStartService(ILogger<WindowsAutoStartService> logger, IS
             return;
         }
 
-        registryKey.SetValue(AppDomain.CurrentDomain.FriendlyName, $"\"{Environment.ProcessPath}\"");
+        registryKey.SetValue(AppName, $"\"{Environment.ProcessPath}\"");
         logger.LogInformation("Autostart enabled");
     }
 
     private void TurnOff(RegistryKey registryKey)
     {
-        if (registryKey.GetValue(AppDomain.CurrentDomain.FriendlyName) is not null)
+        if (registryKey.GetValue(AppName) is not null)
         {
-            registryKey.DeleteValue(AppDomain.CurrentDomain.FriendlyName, throwOnMissingValue: false);
+            registryKey.DeleteValue(AppName, throwOnMissingValue: false);
             logger.LogInformation("Autostart disabled");
         }
+
+        if (registryKey.GetValue("MailNotify.Windows") is not null)
+            registryKey.DeleteValue("MailNotify.Windows", throwOnMissingValue: false);
     }
 }

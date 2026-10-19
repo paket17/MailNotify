@@ -4,8 +4,6 @@ namespace MailNotify.Services;
 
 public class SettingsProvider(IConfiguration configuration) : ISettingsProvider
 {
-    private const string ExchangePath = "EWS/Exchange.asmx";
-
     public double ReminderOffsetMinutes
     {
         get
@@ -28,18 +26,7 @@ public class SettingsProvider(IConfiguration configuration) : ISettingsProvider
         }
     }
 
-    public string MailUrl
-    {
-        get
-        {
-            var value = configuration.GetValue<string>(nameof(MailUrl)) ?? string.Empty;
-            if (value == string.Empty)
-                return value;
-
-            value = value.EndsWith('/') ? value + ExchangePath : value + "/" + ExchangePath;
-            return value;
-        }
-    }
+    public string MailUrl => configuration.GetValue<string>(nameof(MailUrl)) ?? string.Empty;
 
     public bool AutoStart => configuration.GetValue<bool?>(nameof(AutoStart)) ?? true;
 
