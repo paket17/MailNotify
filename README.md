@@ -1,94 +1,94 @@
 # MailNotify
-**MailNotify** — это Windows-приложение, которое отправляет нативные уведомления о событиях календаря Microsoft Exchange.
+
+[🇷🇺 Читать на русском](README.ru.md)
+
+**MailNotify** is a Windows desktop application that sends native notifications for Microsoft Exchange calendar events.
 
 <img width="371" height="138" alt="notify" src="https://github.com/user-attachments/assets/15cd67aa-3a0d-4836-a39b-f44294090552" />
 <img width="184" height="114" alt="next" src="https://github.com/user-attachments/assets/7a993bb9-4b72-42aa-8ce8-88422e6b4d99" />
 <img width="201" height="251" alt="tray" src="https://github.com/user-attachments/assets/7b821816-cc03-4de6-81ea-4e43dd0d11cd" />
 
+## Features
 
+- 📅 Retrieve calendar events from Microsoft Exchange
+- 🔔 Native Windows toast notifications
+- 🗓️ Notification summarizing upcoming meetings for today and new meetings added throughout the day
+- 🖥️ System tray integration: smart icon with auto-detected taskbar theme and real-time hover status
+- 📋 Quick-access tray menu (right-click): browse meetings, open call links, and manage settings
+- 🔐 Windows authentication (Single Sign-On, no password prompts)
+- ⚙️ Runs quietly in the background
+- ❌ Daily meeting summary notifications stay visible until manually dismissed
+- ⏱️ Pre-meeting reminder notifications automatically dismiss when the meeting begins
+- 👆 Clicking a notification directly opens the meeting link
+- 🐞 File logging (see `logs` folder in the application root)
 
+## Configuration
 
-## Возможности
+The application is configured in the **appsettings.json** file.
 
-- 📅 Получение событий календаря с Microsoft Exchange
-- 🔔 Нативные уведомления Windows
-- 🗓️ Уведомление со списком предстоящих встреч на сегодня и новых встреч, появившихся в течение дня
-- 🖥️ Интеграция с системным треем: умный значок с автоопределением темы и статус при наведении
-- 📋 Меню быстрого доступа в трее (по ПКМ): просмотр встреч, переход по ссылкам и настройки
-- 🔐 Аутентификация через Windows (без ввода паролей)
-- ⚙️ Работа в фоновом режиме
-- ❌ Уведомления со списком встреч не пропадают, пока их не закрыть
-- ⏱️ Уведомления перед встречей закрываются автоматически в момент начала встречи
-- 👆 При клике по уведомлению откроется ссылка на встречу
-- 🐞 Логирование в файл (см. папку logs в корне приложения)
+Application autostart can be enabled or disabled in the configuration. Enabled by default.
 
-## Конфигурация
+Example: ```"AutoStart": true```
 
-Приложение настраивается в файле **appsettings.json**
+Notifications for upcoming meetings for today as well as new or updated meetings added during the day can be toggled via configuration. Enabled by default.
 
-Автозапуск приложения можно включить или выключить через конфигурацию. По умолчанию включен.
+Example: ```"NotifyDailyAppointments": true```
 
-Пример: ```"AutoStart": true```
+The Microsoft Exchange server address must be specified in the configuration file.
 
-Уведомления о предстоящих встречах на сегодня и новых или обновленных встречах, появившихся в течение дня, можно включить или выключить через конфигурацию. По умолчанию включены.
+Example: ```"MailUrl": "https://mail.company.ru"```
 
-Пример: ```"NotifyDailyAppointments": true```
+Full URL of the web calendar to open from the tray context menu (optional; defaults to `MailUrl` if omitted).
 
-Адрес Microsoft Exchange сервера необходимо указать в файле конфигурации.
+Example: ```"CalendarUrl": "https://mail.company.ru/owa/#path=/calendar"```
 
-Пример: ```"MailUrl": "https://mail.company.ru"```
+Advance reminder time in minutes before a meeting starts. Default is 15 minutes.
 
-Полный адрес веб-календаря для открытия из контекстного меню трея (опционально, если не указан — открывается адрес `MailUrl`).
+Example: ```"ReminderOffsetMinutes": 15```
 
-Пример: ```"CalendarUrl": "https://mail.company.ru/owa/#path=/calendar"```
+Interval in minutes for fetching updated calendar data from the server. Default is 3 minutes.
 
-Время за сколько минут до начала встречи отправить уведомление. По умолчанию 15 минут.
+Example: ```"UpdateOffsetMinutes": 3```
 
-Пример: ```"ReminderOffsetMinutes": 15```
+## How to Run
 
-Время частоты получения данных календаря с сервера. По умолчанию 3 минуты.
+Run **MailNotify.exe**
 
-Пример: ```"UpdateOffsetMinutes": 3```
+## How It Works
 
-## Запуск
+1. The application architecture is split into two independent loops:
+   - **Meeting Fetch Loop**: Queries Microsoft Exchange via EWS every `UpdateOffsetMinutes` (default: 3 min), saves the day's schedule into a fast thread-safe in-memory cache, and dispatches daily summaries.
+   - **Local Reminder Dispatcher**: Inspects the in-memory schedule every 30 seconds and immediately shows notifications `ReminderOffsetMinutes` before start time without overloading the corporate server with redundant queries.
+2. The application uses current Windows user credentials (SSO, without password prompts).
+3. Upon startup, it displays a single notification listing today's upcoming meetings.
+4. Throughout the day, it only notifies about new or updated meetings that were not previously listed.
+5. Meeting summary notifications have no expiration timeout and remain until closed.
+6. Sends pre-meeting reminder notifications (time and location displayed on separate lines).
+7. Pre-meeting reminders are set to expire right when the meeting starts, so they automatically disappear at kickoff time.
 
-Запустить **MailNotify.exe**
+## System Tray Controls
 
-## Как работает
+When launched, the application resides in the Windows system tray (notification area next to the clock).
 
-1. Архитектура приложения разделена на два независимых контура:
-   - **Контур получения встреч**: раз в `UpdateOffsetMinutes` (по умолчанию 3 мин) обращается к Microsoft Exchange через EWS, сохраняет расписание дня в быстрый потокобезопасный локальный кэш и отправляет сводки дня.
-   - **Локальный диспетчер напоминаний**: каждые 30 секунд проверяет расписание в памяти и мгновенно выводит уведомления за `ReminderOffsetMinutes` до начала, не нагружая корпоративный сервер лишними запросами.
-2. Приложение использует учетные данные текущего пользователя Windows (SSO, без ввода пароля)
-3. При запуске показывает одно уведомление со списком предстоящих встреч на сегодня
-4. В течение дня показывает уведомление только о новых или обновленных встречах, которых еще не было в списке
-5. Уведомления со списком встреч показываются без срока истечения и остаются, пока их не закрыть
-6. Отправляет напоминания перед началом встреч (время и место вынесены на отдельные строки)
-7. Для напоминаний перед встречей задается срок закрытия до начала встречи, поэтому они автоматически исчезают в момент старта
+### 🔍 Icon and Hover Status
+* **Theme Adaptation:** Automatically detects the Windows taskbar theme and selects a high-contrast icon (light icon for dark taskbar, dark icon for light taskbar).
+* **Smart Tooltip:** Hovering over the tray icon displays the current meeting status updated in real time:
+  * In a meeting now: `Now: 09:00 (Subject)` — end time of current meeting;
+  * No active meeting, but upcoming meetings exist: `Next: 10:30 (Subject)` — start time and subject of the next meeting;
+  * No more meetings today: `No upcoming meetings`.
 
-## Управление через системный трей
+### 📋 Quick-Access Context Menu (Right-Click)
+Right-clicking the tray icon opens a modern Windows-styled context menu:
+* **Upcoming Meetings:** Lists up to 5 relevant meetings of the day with times (`Now - 14:15` or `15:00 - 15:30`). If a meeting contains a call link (Microsoft Teams, Zoom, Web interface), clicking the item immediately opens it in the browser.
+* **Open Web Calendar (📅 Open Web Calendar):** Opens the corporate web calendar page (`CalendarUrl`).
+* **Sync Now (🔄 Sync Now):** Triggers an immediate unscheduled poll of the Exchange server and refreshes the schedule without waiting for the background interval.
+* **Start with Windows (🚀 Start with Windows):** One-click toggle for autostart, showing current status with a checkmark.
+* **Exit (❌ Exit):** Closes the application.
 
-При запуске приложение размещается в системном трее Windows (область уведомлений рядом с часами).
-
-### 🔍 Иконка и статус при наведении
-* **Адаптация под тему оформления:** приложение автоматически отслеживает тему панели задач Windows и устанавливает контрастную иконку (светлую для тёмной панели или тёмную для светлой).
-* **Умная подсказка (Tooltip):** при наведении курсора на значок отображается текущий статус встреч, обновляющийся в реальном времени:
-  * Если встреча идёт прямо сейчас: `Now: 09:00 (Тема)` — время окончания текущей встречи;
-  * Если текущей встречи нет, но есть предстоящие: `Next: 10:30 (Тема)` — время начала и тема ближайшей встречи;
-  * Если встреч на сегодня больше нет: `No upcoming meetings`.
-
-### 📋 Меню быстрого доступа (клик ПКМ)
-При клике правой кнопкой мыши по значку открывается современное меню в стиле Windows:
-* **Ближайшие встречи:** список до 5 актуальных встреч дня со временем проведения (`Now - 14:15` или `15:00 - 15:30`). Если во встрече указана ссылка на звонок (Microsoft Teams, Zoom, Web-интерфейс), клик по пункту сразу открывает ее в браузере.
-* **Открыть веб-календарь (📅 Open Web Calendar):** переход на веб-страницу корпоративного календаря (`CalendarUrl`).
-* **Синхронизировать сейчас (🔄 Sync Now):** немедленный внеплановый опрос сервера Exchange и обновление расписания без ожидания фонового интервала.
-* **Запуск вместе с Windows (🚀 Start with Windows):** переключение автозапуска в один клик с отображением текущего статуса (галочка).
-* **Выход (❌ Exit):** завершение работы приложения.
-
-## Требования
+## Requirements
 
 - Windows 10 / Windows 11
-- Доступ к Microsoft Exchange серверу
-- Учетная запись Windows с правами доступа к календарю Exchange
+- Access to a Microsoft Exchange server
+- Windows user account with permissions to access the Exchange calendar
 
-### 🔧 Есть возможность для расширения
+### 🔧 Room for Extension
