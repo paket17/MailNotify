@@ -1,7 +1,7 @@
 # MailNotify
 **MailNotify** — это Windows-приложение, которое отправляет нативные уведомления о событиях календаря Microsoft Exchange.
 
-<img width="383" height="150" alt="image" src="https://github.com/user-attachments/assets/62614168-26b7-46b8-9543-a303a6077445" />
+<img width="371" height="138" alt="notify" src="https://github.com/user-attachments/assets/15cd67aa-3a0d-4836-a39b-f44294090552" />
 <img width="184" height="114" alt="next" src="https://github.com/user-attachments/assets/7a993bb9-4b72-42aa-8ce8-88422e6b4d99" />
 <img width="201" height="251" alt="tray" src="https://github.com/user-attachments/assets/7b821816-cc03-4de6-81ea-4e43dd0d11cd" />
 
